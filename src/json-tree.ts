@@ -12,15 +12,15 @@
 export interface ITree2Json {
 	flatten(o: any): any;
 	storeRef(storedObj: any, indexObj: any): any;
+	context?: any;
 }
 
 export interface IJson2Tree {
 	fatten(o: any): any;
 	storeRef(storedObj: any, indexObj: any): any;
+	context?: any;
 }
 
-type Translator = (o: any) => any;
-type StoreRef = (storedObj: any, indexObj: any) => any;
 type Flatten = (o: any, tree2json: ITree2Json) => any;
 type Fatten = (o: any, json2tree: IJson2Tree) => any;
 
@@ -35,13 +35,13 @@ const _types: TypeTranslator[] = [];
 
 // JsonTree.parse(JsonTree.stringify(people)) will reproduce the original graph
 export class JsonTree {
-	static stringify(tree: any): string {
-		let t2j = new Tree2Json();
+	static stringify(tree: any, context?: any): string {
+		let t2j = new Tree2Json(context);
 		t2j.flatten(tree);
 		return JSON.stringify(t2j.flatObjects);
 	}
-	static parse(json: string): any {
-		let j2t = new Json2Tree(JSON.parse(json));
+	static parse(json: string, context?: any): any {
+		let j2t = new Json2Tree(JSON.parse(json), context);
 		return j2t.fatten([0]);
 	}
 
@@ -163,6 +163,10 @@ export class Tree2Json {
 	public flatObjects: any[] = [];
 	public fatObjects: any[] = [];
 
+	constructor(public context?: any) {
+
+	}
+
 	flatten(obj: any): any {
 		if (obj === null) {
 			return null;
@@ -209,7 +213,7 @@ export class Json2Tree {
 	public fatObjects: any[] = [];
 	public fattenedObjects: any = [];
 
-	constructor(public flattened: any[]) {
+	constructor(public flattened: any[], public context?: any) {
 	}
 
 	fatten(flatRef: any): any {

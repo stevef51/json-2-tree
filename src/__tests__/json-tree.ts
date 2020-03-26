@@ -99,6 +99,9 @@ JsonTree.registerType({
 	ctr: Person,
 	nameOverride: 'A Person',
 	fatten: (o: any, t2j: IJson2Tree) => {
+		if (t2j.context != null) {
+			return t2j.context.test;
+		}
 		let name = t2j.fatten(o.name);
 		let dateOfBirth = t2j.fatten(o.dateOfBirth);
 		return new Person(name, dateOfBirth);
@@ -113,4 +116,18 @@ test('Json2Tree should be able to handle custom Types', () => {
 
 	expect(test2.constructor).toBe(Person);
 	expect((test2 as Person).sayHello()).toBe(test.sayHello());
+})
+
+test('Json2Tree should pass context to custom Types', () => {
+	let test = new Person('Fred', new Date(2020, 0, 1));
+
+	let context = { test }
+	let popsicle = JsonTree.stringify(test, context);
+	let testWithNoContext = JsonTree.parse(popsicle);
+	let testWithContext = JsonTree.parse(popsicle, context);
+
+	expect(testWithNoContext.constructor).toBe(Person);
+	expect(testWithNoContext.constructor).toBe(Person);
+	expect(testWithNoContext).not.toBe(test);
+	expect(testWithContext).toBe(test);
 })
