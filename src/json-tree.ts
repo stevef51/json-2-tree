@@ -65,13 +65,13 @@ const _types: TypeTranslator[] = [];
 
 // JsonTree.parse(JsonTree.stringify(people)) will reproduce the original graph
 export class JsonTree {
-	static stringify(tree: any, context?: any): string {
-		let t2j = new Tree2Json(context);
+	static stringify(tree: any, context?: any, externs?: any[]): string {
+		let t2j = new Tree2Json(context, externs);
 		t2j.flatten(tree);
 		return JSON.stringify(t2j.flatObjects);
 	}
-	static parse(json: string, context?: any): any {
-		let j2t = new Json2Tree(JSON.parse(json), context);
+	static parse(json: string, context?: any, externs?: any[]): any {
+		let j2t = new Json2Tree(JSON.parse(json), context, externs);
 		return j2t.fatten(0);
 	}
 
@@ -106,7 +106,7 @@ export class Json2Tree {
 	public fatObjects: any[] = [];
 	public fattenedObjects: any = [];
 
-	constructor(public flattened: any[], public context?: any) {
+	constructor(public flattened: any[], public context?: any, public externs?: any[]) {
 	}
 
 	fattenObject(flatObj: any): any {
@@ -133,6 +133,10 @@ export class Json2Tree {
 		} else if (typeof flatRef === 'undefined') {
 			return undefined;
 		} else if (typeof flatRef === 'number') {
+			// A -ve index means it should be an extern lookup 
+			if (flatRef < 0) {
+				return this.externs[-flatRef - 1];
+			}
 			let flatObj = this.flattened[flatRef];
 			let i = this.fattenedObjects.indexOf(flatObj);
 			if (i >= 0) {
@@ -176,7 +180,7 @@ export class Tree2Json {
 	public flatObjects: any[] = [];
 	public fatObjects: any[] = [];
 
-	constructor(public context?: any) {
+	constructor(public context?: any, public externs?: any[]) {
 
 	}
 
@@ -212,6 +216,13 @@ export class Tree2Json {
 		let i = this.fatObjects.indexOf(fatObj);
 		if (i >= 0) {
 			return i;
+		}
+
+		if (this.externs != null) {
+			i = this.externs.indexOf(fatObj);
+			if (i >= 0) {
+				return -1 - i;			// -ve index means its an extern and will not be flattened
+			}
 		}
 
 		switch (typeof fatObj) {

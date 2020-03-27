@@ -55,13 +55,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const _types = [];
 // JsonTree.parse(JsonTree.stringify(people)) will reproduce the original graph
 class JsonTree {
-    static stringify(tree, context) {
-        let t2j = new Tree2Json(context);
+    static stringify(tree, context, externs) {
+        let t2j = new Tree2Json(context, externs);
         t2j.flatten(tree);
         return JSON.stringify(t2j.flatObjects);
     }
-    static parse(json, context) {
-        let j2t = new Json2Tree(JSON.parse(json), context);
+    static parse(json, context, externs) {
+        let j2t = new Json2Tree(JSON.parse(json), context, externs);
         return j2t.fatten(0);
     }
     static registerType(config) {
@@ -84,9 +84,10 @@ function FattenDate(dtStr) {
 }
 JsonTree.registerType({ ctr: Date, fatten: FattenDate, flatten: FlattenDate });
 class Json2Tree {
-    constructor(flattened, context) {
+    constructor(flattened, context, externs) {
         this.flattened = flattened;
         this.context = context;
+        this.externs = externs;
         this.fatObjects = [];
         this.fattenedObjects = [];
     }
@@ -114,6 +115,10 @@ class Json2Tree {
             return undefined;
         }
         else if (typeof flatRef === 'number') {
+            // A -ve index means it should be an extern lookup 
+            if (flatRef < 0) {
+                return this.externs[-flatRef - 1];
+            }
             let flatObj = this.flattened[flatRef];
             let i = this.fattenedObjects.indexOf(flatObj);
             if (i >= 0) {
@@ -154,8 +159,9 @@ class Json2Tree {
 }
 exports.Json2Tree = Json2Tree;
 class Tree2Json {
-    constructor(context) {
+    constructor(context, externs) {
         this.context = context;
+        this.externs = externs;
         this.flatObjects = [];
         this.fatObjects = [];
     }
@@ -188,6 +194,12 @@ class Tree2Json {
         let i = this.fatObjects.indexOf(fatObj);
         if (i >= 0) {
             return i;
+        }
+        if (this.externs != null) {
+            i = this.externs.indexOf(fatObj);
+            if (i >= 0) {
+                return -1 - i; // -ve index means its an extern and will not be flattened
+            }
         }
         switch (typeof fatObj) {
             case 'undefined':

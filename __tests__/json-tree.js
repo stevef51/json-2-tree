@@ -191,3 +191,30 @@ test('Json2Tree supports simple flattening', () => {
 	expect(test2.doNotStoreThis).toBeUndefined();
 	expect(test2.getUnderlyingData()).toBe(test.getUnderlyingData());
 })
+
+test('Json2Tree supports flattening with externals', () => {
+	let extern1 = { a: 123 };
+	let extern2 = { b: 456 };
+
+	let test = {
+		name: 'Hello',
+		extern1: extern1,
+		extern2: extern2
+	}
+	let popsicle = JsonTree.stringify(test);
+	let test2 = JsonTree.parse(popsicle);
+
+	expect(test2).not.toBe(test);
+	expect(test2.name).toBe(test.name);
+	expect(test2.extern1).not.toBe(extern1);
+	expect(test2.extern2).not.toBe(extern2);
+
+	// Now with externs
+	popsicle = JsonTree.stringify(test, undefined, [extern1, extern2]);
+	test2 = JsonTree.parse(popsicle, undefined, [extern1, extern2]);
+
+	expect(test2).not.toBe(test);
+	expect(test2.name).toBe(test.name);
+	expect(test2.extern1).toBe(extern1);
+	expect(test2.extern2).toBe(extern2);
+})
