@@ -7,6 +7,19 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "Launch Program",
+			"program": "${workspaceFolder}/src/verify.ts",
+			"preLaunchTask": "tsc: build - tsconfig.json",
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
+			"skipFiles": [
+				"<node_internals>/**"
+			]
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "Jest All",
 			"program": "${workspaceFolder}/node_modules/.bin/jest",
 			"args": [

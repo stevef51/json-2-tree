@@ -1,19 +1,32 @@
-import { JsonTree, ITree2Json, IJson2Tree } from "../json-tree"
+const JsonTree = require('../out/json-tree').JsonTree;
+
+test("Json2Tree should be able to store simple objects", () => {
+	let test = 'Hello world';
+	let popsicle = JsonTree.stringify(test);
+	let thawed = JsonTree.parse(popsicle);
+	expect(thawed).toBe(test);
+
+	test = { a: [] };
+	test.a.push(test);
+	popsicle = JsonTree.stringify(test);
+	thawed = JsonTree.parse(popsicle);
+	expect(thawed.a[0]).toBe(thawed);
+})
 
 test("Json2Tree should be able to serialize then deserialize a circular referenced object hierarchy", function () {
-	let Alice: any = {
+	let Alice = {
 		age: 30,
 		favouriteFood: 'Apple'
 	}
-	let Fred: any = {
+	let Fred = {
 		age: 35,
 		favouriteFood: 'Banana'
 	}
-	let Maggie: any = {
+	let Maggie = {
 		age: 70,
 		favouriteFood: 'Oatmeal'
 	}
-	let Hugh: any = {
+	let Hugh = {
 		age: 68,
 		favouriteFood: 'Icecream'
 	}
@@ -41,9 +54,13 @@ test("Json2Tree should be able to serialize then deserialize a circular referenc
 	let family = [Alice, Fred, Maggie, Hugh];
 
 	let popsicle = JsonTree.stringify(family);
-	let [Alice2, Fred2, Maggie2, Hugh2] = JsonTree.parse(popsicle);
+	let result = JsonTree.parse(popsicle);
+	let Alice2 = result[0],
+		Fred2 = result[1],
+		Maggie2 = result[2],
+		Hugh2 = result[3];
 
-	function expectPerson(a: any, b: any) {
+	function expectPerson(a, b) {
 		expect(a.age).toBe(b.age);
 		expect(a.favouriteFood).toBe(b.favouriteFood);
 	}
@@ -82,15 +99,16 @@ test('Json2Tree should be able to handle Dates', () => {
 	let test2 = JsonTree.parse(popsicle);
 
 	expect(test2.dateOfBirth.constructor).toBe(Date);
-	expect((test2.dateOfBirth as Date).toString()).toBe(test.dateOfBirth.toString());
+	expect(test2.dateOfBirth.toString()).toBe(test.dateOfBirth.toString());
 })
 
 class Person {
-	constructor(public name: string, public dateOfBirth: Date) {
-
+	constructor(name, dateOfBirth) {
+		this.name = name;
+		this.dateOfBirth = dateOfBirth;
 	}
 
-	sayHello(): string {
+	sayHello() {
 		return `Hello ${this.name}, your birthday is ${this.dateOfBirth}`;
 	}
 }
@@ -98,13 +116,11 @@ class Person {
 JsonTree.registerType({
 	ctr: Person,
 	nameOverride: 'A Person',
-	fatten: (o: any, t2j: IJson2Tree) => {
-		if (t2j.context != null) {
-			return t2j.context.test;
+	fatten: (o, context) => {
+		if (context != null) {
+			return context.test;
 		}
-		let name = t2j.fatten(o.name);
-		let dateOfBirth = t2j.fatten(o.dateOfBirth);
-		return new Person(name, dateOfBirth);
+		return new Person(o.name, o.dateOfBirth);
 	}
 });
 
@@ -115,7 +131,7 @@ test('Json2Tree should be able to handle custom Types', () => {
 	let test2 = JsonTree.parse(popsicle);
 
 	expect(test2.constructor).toBe(Person);
-	expect((test2 as Person).sayHello()).toBe(test.sayHello());
+	expect(test2.sayHello()).toBe(test.sayHello());
 })
 
 test('Json2Tree should pass context to custom Types', () => {
@@ -130,4 +146,48 @@ test('Json2Tree should pass context to custom Types', () => {
 	expect(testWithNoContext.constructor).toBe(Person);
 	expect(testWithNoContext).not.toBe(test);
 	expect(testWithContext).toBe(test);
+})
+
+class SimpleFlattenTest {
+
+	constructor(doNotStoreThis) {
+		this._underlyingData = null;
+		this.doNotStoreThis = doNotStoreThis;
+	}
+
+	setUnderlyingData(data) {
+		this._underlyingData = data;
+	}
+
+	getUnderlyingData() {
+		return this._underlyingData;
+	}
+
+	static registerJsonTree() {
+		JsonTree.registerType({
+			ctr: SimpleFlattenTest,
+			flatten(o) {
+				return o._underlyingData;
+			},
+			fatten(o) {
+				let result = new SimpleFlattenTest(undefined);
+				result.setUnderlyingData(o);
+				return result;
+			}
+		})
+	}
+}
+
+SimpleFlattenTest.registerJsonTree();
+
+test('Json2Tree supports simple flattening', () => {
+	let test = new SimpleFlattenTest('do not store this');
+	test.setUnderlyingData('some important data');
+
+	let popsicle = JsonTree.stringify(test);
+	let test2 = JsonTree.parse(popsicle);
+
+	expect(test2).not.toBe(test);
+	expect(test2.doNotStoreThis).toBeUndefined();
+	expect(test2.getUnderlyingData()).toBe(test.getUnderlyingData());
 })
