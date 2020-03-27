@@ -2,7 +2,7 @@
   "name": "json-tree",
   "version": "1.0.0",
   "description": "A circular reference and type aware JSON serializer/deserializer",
-  "main": "src/json-tree.ts",
+  "main": "dist/json-tree.js",
   "scripts": {
     "test": "jest",
     "build": "tsc"
