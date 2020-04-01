@@ -1,4 +1,4 @@
-const JsonTree = require('../out/json-tree').JsonTree;
+const JsonTree = require('../dist/json-tree').JsonTree;
 
 test("Json2Tree should be able to store simple objects", () => {
 	let test = 'Hello world';
@@ -218,3 +218,25 @@ test('Json2Tree supports flattening with externals', () => {
 	expect(test2.extern1).toBe(extern1);
 	expect(test2.extern2).toBe(extern2);
 })
+
+test('Json2Tree instance supports custom Object flattening', () => {
+	let jt = new JsonTree();
+	jt.registerType({
+		ctr: Object,
+		flatten: o => {
+			let result = Object.assign({}, o);
+			delete result.$$hashKey;
+			return result;
+		}
+	})
+
+	let test = {
+		a: '1',
+		$$hashKey: 'Delete this'
+	}
+	let popsicle = jt.stringify(test);
+	let test2 = jt.parse(popsicle);
+
+	expect(test2.a).toBe(test.a);
+	expect(test2.$$hashKey).toBeUndefined();
+});

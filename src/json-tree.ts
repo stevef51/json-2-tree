@@ -56,39 +56,67 @@ type Fatten = (o: any, context?: any) => any;
 
 interface TypeTranslator {
 	ctr: Function;
-	nameOverride: string;
+	nameOverride?: string;
 	flatten?: Flatten;
 	fatten?: Fatten
 }
 
-const _types: TypeTranslator[] = [];
+export const globalTypes: TypeTranslator[] = [];
+
+function registerType(types: TypeTranslator[], config: TypeTranslator): TypeTranslator {
+	let result = types.find(t => t.ctr === config.ctr);
+	if (result == null) {
+		result = {
+			ctr: config.ctr,
+			nameOverride: config.nameOverride || config.ctr.name,
+			flatten: config.flatten || identity,
+			fatten: config.fatten || identity
+		};
+		types.push(result);
+	} else {
+		result.fatten = config.fatten || identity;
+		result.flatten = config.flatten || identity;
+	}
+	return result;
+}
+
+const identity = o => o;
 
 // JsonTree.parse(JsonTree.stringify(people)) will reproduce the original graph
 export class JsonTree {
+	public externs: any[];
+	public types: TypeTranslator[] = [];
+
+	constructor() {
+
+	}
+
+	stringify(tree: any, context?: any): string {
+		let t2j = new Tree2Json(this.types, context, this.externs);
+		t2j.flatten(tree);
+		return JSON.stringify(t2j.flatObjects);
+	}
+	parse(json: string, context?: any): any {
+		let j2t = new Json2Tree(JSON.parse(json), this.types, context, this.externs);
+		return j2t.fatten(0);
+	}
+
+	registerType(config: TypeTranslator): TypeTranslator {
+		return registerType(this.types, config);
+	}
+
+	static registerType(config: TypeTranslator): TypeTranslator {
+		return registerType(globalTypes, config);
+	}
+
 	static stringify(tree: any, context?: any, externs?: any[]): string {
-		let t2j = new Tree2Json(context, externs);
+		let t2j = new Tree2Json(globalTypes, context, externs);
 		t2j.flatten(tree);
 		return JSON.stringify(t2j.flatObjects);
 	}
 	static parse(json: string, context?: any, externs?: any[]): any {
-		let j2t = new Json2Tree(JSON.parse(json), context, externs);
+		let j2t = new Json2Tree(JSON.parse(json), globalTypes, context, externs);
 		return j2t.fatten(0);
-	}
-
-	static registerType(config: {
-		ctr: Function;
-		nameOverride?: string;
-		flatten?: Flatten;
-		fatten?: Fatten
-	}): TypeTranslator {
-		let result: TypeTranslator = {
-			ctr: config.ctr,
-			nameOverride: config.nameOverride || config.ctr.name,
-			flatten: config.flatten,
-			fatten: config.fatten
-		};
-		_types.push(result);
-		return result;
 	}
 }
 
@@ -100,13 +128,15 @@ function FattenDate(dtStr: string): any {
 	return new Date(JSON.parse(dtStr));
 }
 
+JsonTree.registerType({ ctr: Object, fatten: identity, flatten: identity });
+
 JsonTree.registerType({ ctr: Date, fatten: FattenDate, flatten: FlattenDate });
 
 export class Json2Tree {
 	public fatObjects: any[] = [];
 	public fattenedObjects: any = [];
 
-	constructor(public flattened: any[], public context?: any, public externs?: any[]) {
+	constructor(public flattened: any[], public types: TypeTranslator[], public context?: any, public externs?: any[]) {
 	}
 
 	fattenObject(flatObj: any): any {
@@ -155,7 +185,7 @@ export class Json2Tree {
 					return this.fattenArray(flatObj[0]);
 				} else {
 					let constructorName = this.fatten(flatObj[0]);
-					let translator = _types.find(t => t.nameOverride === constructorName);
+					let translator = this.types.find(t => t.nameOverride === constructorName);
 					let fatObj = this.fatten(flatObj[1]);
 					if (translator == null || translator.fatten == null) {
 						return fatObj;
@@ -176,11 +206,13 @@ export class Json2Tree {
 	}
 }
 
+const NotFlattened = Object.create(null);
+
 export class Tree2Json {
 	public flatObjects: any[] = [];
 	public fatObjects: any[] = [];
 
-	constructor(public context?: any, public externs?: any[]) {
+	constructor(public types: TypeTranslator[], public context?: any, public externs?: any[]) {
 
 	}
 
@@ -207,7 +239,7 @@ export class Tree2Json {
 		return ref;
 	}
 
-	flatten(fatObj: any): any {
+	flattenBasic(fatObj: any): any {
 		if (fatObj === null) {
 			return null;
 		}
@@ -238,27 +270,34 @@ export class Tree2Json {
 		}
 
 		// We have not seen this object/array before, flatten it ..
-		let constructor = fatObj.constructor || Object;
-		switch (constructor.name) {
-			case 'Object':
-				return this.flattenObject(fatObj);
-			case 'Array':
-				return this.flattenArray(fatObj);
+		if (Array.isArray(fatObj)) {
+			return this.flattenArray(fatObj as []);
 		}
 
-		let translator = _types.find(t => t.ctr === constructor);
-		let translatedObj = fatObj;
-		if (translator != null && translator.flatten != null) {
-			// Custom translate the object first
-			translatedObj = translator.flatten(fatObj, this.context);
+		return NotFlattened;
+	}
+
+	flatten(fatObj: any): any {
+		let ref = this.flattenBasic(fatObj);
+		if (ref === NotFlattened) {
+			let constructor = fatObj.constructor;
+			let translator = this.types.find(t => t.ctr === constructor);
+			if (translator == null) {
+				throw new Error(`Cannot flatten ${constructor?.name}, missing Translator`);
+			}
+			let translatedObj = translator.flatten(fatObj, this.context);
+			if (translatedObj === fatObj) {
+				translatedObj = Object.assign(Object.create(null), fatObj);
+			}
+			let custom = [];
+			ref = this.storeRef(custom, fatObj);				// Key'ing off of fatObj
+			custom.push(this.flatten(translator.nameOverride));
+			let customRef = this.flattenBasic(translatedObj);
+			if (customRef === NotFlattened) {
+				customRef = this.flattenObject(translatedObj);
+			}
+			custom.push(customRef);
 		}
-		if (translatedObj === fatObj) {
-			translatedObj = Object.assign(Object.create(null), fatObj);
-		}
-		let custom = [];
-		let ref = this.storeRef(custom, fatObj);				// Key'ing off of fatObj
-		custom.push(this.flatten(translator.nameOverride));
-		custom.push(this.flatten(translatedObj));
 		return ref;
 	}
 
