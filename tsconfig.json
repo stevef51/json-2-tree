@@ -5,6 +5,7 @@
     "outDir": "./dist",
     "moduleResolution": "node",
     "sourceMap": true,
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "declaration": true
   }
 }
