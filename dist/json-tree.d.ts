@@ -16,9 +16,9 @@ export declare class JsonTreeTranslatorRegistry {
 }
 export declare const JsonTreeTranslators: JsonTreeTranslatorRegistry;
 export declare class JsonTree {
-    translators: JsonTreeTranslatorRegistry;
+    translators?: JsonTreeTranslatorRegistry;
     externs: any[];
-    constructor(translators: JsonTreeTranslatorRegistry);
+    constructor(translators?: JsonTreeTranslatorRegistry);
     stringify(tree: any, context?: any): string;
     parse(json: string, context?: any): any;
     static stringify(tree: any, context?: any, externs?: any[]): string;

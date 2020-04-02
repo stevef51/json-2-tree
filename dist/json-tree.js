@@ -57,8 +57,8 @@ class JsonTreeTranslatorRegistry {
     // parent = undefined will create a descendant of the global registry JsonTreeTranslators
     constructor(parent) {
         this.parent = parent;
-        if (parent === undefined) {
-            parent = exports.JsonTreeTranslators;
+        if (this.parent === undefined) {
+            this.parent = exports.JsonTreeTranslators;
         }
         this.types = [];
     }
@@ -92,6 +92,9 @@ const identity = o => o;
 class JsonTree {
     constructor(translators) {
         this.translators = translators;
+        if (this.translators === undefined) {
+            this.translators = exports.JsonTreeTranslators;
+        }
     }
     stringify(tree, context) {
         let t2j = new Tree2Json(this.translators, context, this.externs);
