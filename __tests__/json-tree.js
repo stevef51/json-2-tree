@@ -1,4 +1,4 @@
-const JsonTree = require('../dist/json-tree').JsonTree;
+const { JsonTree, JsonTreeTranslators, JsonTreeTranslatorRegistry } = require('../dist/json-tree');
 
 test("Json2Tree should be able to store simple objects", () => {
 	let test = 'Hello world';
@@ -113,9 +113,9 @@ class Person {
 	}
 }
 
-JsonTree.registerType({
+JsonTreeTranslators.register({
 	ctr: Person,
-	nameOverride: 'A Person',
+	name: 'A Person',
 	fatten: (o, context) => {
 		if (context != null) {
 			return context.test;
@@ -164,7 +164,7 @@ class SimpleFlattenTest {
 	}
 
 	static registerJsonTree() {
-		JsonTree.registerType({
+		JsonTreeTranslators.register({
 			ctr: SimpleFlattenTest,
 			flatten(o) {
 				return o._underlyingData;
@@ -220,8 +220,8 @@ test('Json2Tree supports flattening with externals', () => {
 })
 
 test('Json2Tree instance supports custom Object flattening', () => {
-	let jt = new JsonTree();
-	jt.registerType({
+	let jtr = new JsonTreeTranslatorRegistry();
+	jtr.register({
 		ctr: Object,
 		flatten: o => {
 			let result = Object.assign({}, o);
@@ -229,6 +229,7 @@ test('Json2Tree instance supports custom Object flattening', () => {
 			return result;
 		}
 	})
+	let jt = new JsonTree(jtr);
 
 	let test = {
 		a: '1',
