@@ -1,10 +1,11 @@
-declare type Flatten = (o: any, context?: any) => any;
-declare type Fatten = (o: any, context?: any) => any;
+declare type Convert = (o: any) => any;
+declare type CustomFlatten = (o: any, context?: any) => any;
+declare type CustomFatten = (o: any, fatten: Convert, store: Convert, context?: any) => any;
 interface TypeTranslator {
     ctr: Function;
     name?: string;
-    flatten?: Flatten;
-    fatten?: Fatten;
+    flatten?: CustomFlatten;
+    fatten?: CustomFatten;
 }
 export declare class JsonTreeTranslatorRegistry {
     parent?: JsonTreeTranslatorRegistry;
@@ -32,7 +33,6 @@ export declare class Json2Tree {
     fatObjects: any[];
     fattenedObjects: any;
     constructor(flattened: any[], translators: JsonTreeTranslatorRegistry, context?: any, externs?: any[]);
-    fattenObject(flatObj: any): any;
     fattenArray(flatArray: []): any;
     fatten(flatRef: any): any;
     storeRef(fatObj: any, flatObj: any): any;

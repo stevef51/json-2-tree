@@ -1,64 +1,76 @@
-/* 
-JsonTree can take any object graph, a complex object/array with object references and produce a String representation that
-can be "parsed" back the original object graph.
-JSON.stringify and JSON.parse cannot do this as an object/array with multiple internal references to any given object/array will
-JSON.stringify fine but when JSON.parse'd the output will be a different graph with missing references
-eg
+/*
+JsonTree is a set of classes which allow a complex object hierarchy (a tree) to be serialized to a string
+and then deserialized to the original tree structure (with new objects ofcourse)
 
-let bob = { name: 'Bob' };
-let sarah = { name: 'Sarah', brother: bob };
-let people = [ bob, sarah ];
-JSON.parse(JSON.stringify(people)) will produce a subtley different graph with 'bob' appearing as 2 different objects
+Although it supports a similar set of features to the very popular NPM library "flattened" JsonTree is more customizable with the 
+following features :-
+
+- Pluggable Custom types (ie none Object) can be easily configured such that the deserialized objects have proper type
+- Allows for "externs" - objects which are not to be serialized but still part of the tree
+- Compresses duplicate primitives aswell
+
+In a similar fashion to "flattened" Serialized objects become a flat array, with the "root" object always being the 0th element
+
+the string 
+
+"Hello world" 
+
+becomes 
+
+["Hello world"]
+
+an object 
+
+{ name: 'Fred', age: 36 }
+
+becomes
+
+[[1,2],"Object",{name:3,age:4},"Fred",36]
+
+an array
+
+["ABC",123,"ABC"]				// note the duplicate string "ABC"
+
+becomes
+
+[[[1,2,1]],"ABC",123]			// ABC is not duplicated but referenced twice
 
 
-JsonTree (and its worker classes Tree2Json and Json2Tree) essentially walk the object graph and any Reference (Array, Object and any Object derivative (eg Date))
-is serialized into an "flat" Array, Primitives are JSON.stringified in place where Objects/Arrays are annotated to reference these allowing for multiple
-references to any given Object/Array
- 
-The encoding is as follows :-
- 
-[flatObj1, flatObj2, flatObjN]
- 
-flatObj is encoded as either
- 
-Object: { prop1: refA, prop2: refB }
-Array: [[ ref1, ref2, ref3 ]]
-CustomObject: [ ref-constructor-name, Object ]
- 
-eg, the above 'people' example would produce
-[
-    [                       
-        [                   // This is the people array, the graph root will always be 1st item in the array
-            2,              // Reference to Bob
-            4               // Reference to Sarah
-        ] 
-	],
-	'Bob',
-    {                       // This is the simple Bob object
-        name: 1
-	},
-	'Sarah',
-    {
-        name: 3,            // Sarah object
-        brother: 2          // Reference to Bob
-	},
-	'Date',
-	'2020-01-01T00:00:00.000Z',
-	[
-		5,					// Custom object type 'Date'
-		6					// Custom object content
-	]
-]
+the custom object
+
+var p = new Person({ name: "Fred", age: 36})
+p.self = p;
+
+becomes
+
+[[1,2],"Person",{name:3,age:4,self:0},"Fred",36]
+
+
 */
+type Convert = (o: any) => any;
 
-type Flatten = (o: any, context?: any) => any;
-type Fatten = (o: any, context?: any) => any;
+type CustomFlatten = (o: any, context?: any) => any;
+type CustomFatten = (o: any, fatten: Convert, store: Convert, context?: any) => any;
 
 interface TypeTranslator {
 	ctr: Function;
 	name?: string;
-	flatten?: Flatten;
-	fatten?: Fatten
+	flatten?: CustomFlatten;
+	fatten?: CustomFatten
+}
+
+function fattenObjectFactory(ctr: Function): any {
+	ctr = ctr || (() => Object.create(null));
+	return function fatten(o: any, fatten: Convert, store: Convert) {
+		let fatObj = store(ctr());
+		let hasOwnProperty = Object.hasOwnProperty.bind(o);
+		for (let p in o) {
+			if (hasOwnProperty(p)) {
+				fatObj[p] = fatten(o[p]);
+			}
+		}
+		return fatObj;
+	}
 }
 
 export class JsonTreeTranslatorRegistry {
@@ -78,7 +90,7 @@ export class JsonTreeTranslatorRegistry {
 			ctr: config.ctr,
 			name: config.name || config.ctr.name,
 			flatten: config.flatten || identity,
-			fatten: config.fatten || identity
+			fatten: config.fatten || fattenObjectFactory(config.ctr)
 		});
 	}
 
@@ -134,13 +146,23 @@ export class JsonTree {
 	}
 }
 
-JsonTreeTranslators.register({ ctr: Object, fatten: identity, flatten: identity });
+// Handle Objects - note, a fatten'ed Object will always have a "undefined" prototype
+JsonTreeTranslators.register({
+	ctr: Object
+});
+
+JsonTreeTranslators.register({
+	ctr: undefined,
+	name: `undefined`
+});
+
+// Handle Date's
 JsonTreeTranslators.register({
 	ctr: Date,
-	fatten: (dtStr: string) => {
-		return new Date(JSON.parse(dtStr));
-
-	}, flatten: (dt: Date) => {
+	fatten: (o: any, fatten: Convert, store: Convert) => {
+		return store(new Date(JSON.parse(fatten(o))));
+	},
+	flatten: (dt: Date) => {
 		return JSON.stringify(dt);
 	}
 });
@@ -150,15 +172,6 @@ export class Json2Tree {
 	public fattenedObjects: any = [];
 
 	constructor(public flattened: any[], public translators: JsonTreeTranslatorRegistry, public context?: any, public externs?: any[]) {
-	}
-
-	fattenObject(flatObj: any): any {
-		let fatObj = Object.create(null);
-		this.storeRef(fatObj, flatObj);
-		for (let p in flatObj) {
-			fatObj[p] = this.fatten(flatObj[p]);
-		}
-		return fatObj;
 	}
 
 	fattenArray(flatArray: []): any {
@@ -199,15 +212,16 @@ export class Json2Tree {
 				} else {
 					let constructorName = this.fatten(flatObj[0]);
 					let translator = this.translators.findName(constructorName);
-					let fatObj = this.fatten(flatObj[1]);
-					if (translator == null || translator.fatten == null) {
-						return fatObj;
+					if (translator == null) {
+						throw new Error(`Cannot fatten ${constructorName}, missing Translator`);
 					}
-					return translator.fatten(fatObj, this.context);
+					let obj = this.flattened[flatObj[1]];
+					return translator.fatten(obj, this.fatten.bind(this), fatObj => {
+						return this.storeRef(fatObj, flatObj);
+					}, this.context)
 				}
-			} else {
-				return this.fattenObject(flatObj);
 			}
+			throw new Error(`Unexpected fatten construct ${JSON.stringify(flatObj)}`);
 		}
 		return flatRef;
 	}

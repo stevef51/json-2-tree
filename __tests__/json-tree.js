@@ -7,10 +7,22 @@ test("Json2Tree should be able to store simple objects", () => {
 	expect(thawed).toBe(test);
 
 	test = { a: [] };
+	expect(test.constructor).toBe(Object);
 	test.a.push(test);
 	popsicle = JsonTree.stringify(test);
 	thawed = JsonTree.parse(popsicle);
+	expect(thawed.constructor).toBe(Object);
 	expect(thawed.a[0]).toBe(thawed);
+})
+
+test("Json2Tree should be able to store raw objects with no prototype", () => {
+	let test = Object.create(null);
+	expect(test.__proto__).toBeUndefined();
+	test.hello = 'hello';
+	let popsicle = JsonTree.stringify(test);
+	let thawed = JsonTree.parse(popsicle);
+	expect(thawed.hello).toBe(test.hello);
+	expect(thawed.__proto__).toBeUndefined();
 })
 
 test("Json2Tree should be able to serialize then deserialize a circular referenced object hierarchy", function () {
@@ -116,22 +128,26 @@ class Person {
 JsonTreeTranslators.register({
 	ctr: Person,
 	name: 'A Person',
-	fatten: (o, context) => {
+	fatten: (o, fatten, store, context) => {
 		if (context != null) {
-			return context.test;
+			return store(context.test);
 		}
-		return new Person(o.name, o.dateOfBirth);
+		let person = store(new Person(fatten(o.name), fatten(o.dateOfBirth)));
+		person.self = fatten(o.self);
+		return person;
 	}
 });
 
-test('Json2Tree should be able to handle custom Types', () => {
+test('Json2Tree should be able to handle custom Types with circular references', () => {
 	let test = new Person('Fred', new Date(2020, 0, 1));
+	test.self = test;
 
 	let popsicle = JsonTree.stringify(test);
 	let test2 = JsonTree.parse(popsicle);
 
 	expect(test2.constructor).toBe(Person);
 	expect(test2.sayHello()).toBe(test.sayHello());
+	expect(test2.self).toBe(test2);
 })
 
 test('Json2Tree should pass context to custom Types', () => {
@@ -169,9 +185,9 @@ class SimpleFlattenTest {
 			flatten(o) {
 				return o._underlyingData;
 			},
-			fatten(o) {
-				let result = new SimpleFlattenTest(undefined);
-				result.setUnderlyingData(o);
+			fatten(o, fatten, store) {
+				let result = store(new SimpleFlattenTest(undefined));
+				result.setUnderlyingData(fatten(o));
 				return result;
 			}
 		})
