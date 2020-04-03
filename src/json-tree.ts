@@ -47,12 +47,12 @@ becomes
 
 
 */
-type Convert = (o: any) => any;
+export type Convert = (o: any) => any;
 
-type CustomFlatten = (o: any, context?: any) => any;
-type CustomFatten = (o: any, fatten: Convert, store: Convert, context?: any) => any;
+export type CustomFlatten = (o: any, context?: any) => any;
+export type CustomFatten = (o: any, fatten: Convert, store: Convert, context?: any) => any;
 
-interface TypeTranslator {
+export interface TypeTranslator {
 	ctr: Function;
 	name?: string;
 	flatten?: CustomFlatten;

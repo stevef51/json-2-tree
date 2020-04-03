@@ -1,7 +1,7 @@
-declare type Convert = (o: any) => any;
-declare type CustomFlatten = (o: any, context?: any) => any;
-declare type CustomFatten = (o: any, fatten: Convert, store: Convert, context?: any) => any;
-interface TypeTranslator {
+export declare type Convert = (o: any) => any;
+export declare type CustomFlatten = (o: any, context?: any) => any;
+export declare type CustomFatten = (o: any, fatten: Convert, store: Convert, context?: any) => any;
+export interface TypeTranslator {
     ctr: Function;
     name?: string;
     flatten?: CustomFlatten;
@@ -50,4 +50,3 @@ export declare class Tree2Json {
     flatten(fatObj: any): any;
     storeRef(flatObj: any, fatObj: any): number;
 }
-export {};
