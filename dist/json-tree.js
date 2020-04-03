@@ -23,12 +23,14 @@ class JsonTreeTranslatorRegistry {
         }
         this.types = [];
     }
-    register(config) {
-        this.types.push({
-            ctr: config.ctr,
-            name: config.name || config.ctr.name,
-            flatten: config.flatten || identity,
-            fatten: config.fatten || fattenObjectFactory(config.ctr)
+    register(...configs) {
+        configs.map(config => {
+            this.types.push({
+                ctr: config.ctr,
+                name: config.name || config.ctr.name,
+                flatten: config.flatten || identity,
+                fatten: config.fatten || fattenObjectFactory(config.ctr)
+            });
         });
     }
     findConstructor(ctr) {

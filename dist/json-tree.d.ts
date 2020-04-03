@@ -11,7 +11,7 @@ export declare class JsonTreeTranslatorRegistry {
     parent?: JsonTreeTranslatorRegistry;
     types: TypeTranslator[];
     constructor(parent?: JsonTreeTranslatorRegistry);
-    register(config: TypeTranslator): void;
+    register(...configs: TypeTranslator[]): void;
     findConstructor(ctr: Function): TypeTranslator | null;
     findName(name: string): TypeTranslator | null;
 }

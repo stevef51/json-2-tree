@@ -85,12 +85,14 @@ export class JsonTreeTranslatorRegistry {
 		this.types = [];
 	}
 
-	register(config: TypeTranslator): void {
-		this.types.push({
-			ctr: config.ctr,
-			name: config.name || config.ctr.name,
-			flatten: config.flatten || identity,
-			fatten: config.fatten || fattenObjectFactory(config.ctr)
+	register(...configs: TypeTranslator[]): void {
+		configs.map(config => {
+			this.types.push({
+				ctr: config.ctr,
+				name: config.name || config.ctr.name,
+				flatten: config.flatten || identity,
+				fatten: config.fatten || fattenObjectFactory(config.ctr)
+			});
 		});
 	}
 
