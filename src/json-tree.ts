@@ -117,7 +117,6 @@ export const JsonTreeTranslators = new JsonTreeTranslatorRegistry();
 
 const identity = o => o;
 
-// JsonTree.parse(JsonTree.stringify(people)) will reproduce the original graph
 export class JsonTree {
 	public externs: any[];
 

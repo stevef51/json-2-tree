@@ -51,7 +51,6 @@ class JsonTreeTranslatorRegistry {
 exports.JsonTreeTranslatorRegistry = JsonTreeTranslatorRegistry;
 exports.JsonTreeTranslators = new JsonTreeTranslatorRegistry();
 const identity = o => o;
-// JsonTree.parse(JsonTree.stringify(people)) will reproduce the original graph
 class JsonTree {
     constructor(translators) {
         this.translators = translators;

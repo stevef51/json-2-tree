@@ -1,5 +1,5 @@
 {
-  "name": "json-tree",
+  "name": "json-2-tree",
   "version": "1.0.0",
   "description": "A circular reference and type aware JSON serializer/deserializer",
   "main": "dist/json-tree.js",
@@ -9,18 +9,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stevef51/json-tree.git"
+    "url": "git+https://github.com/stevef51/json-2-tree.git"
   },
   "author": "Steve Fillingham",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/stevef51/json-tree/issues"
+    "url": "https://github.com/stevef51/json-2-tree/issues"
   },
-  "homepage": "https://github.com/stevef51/json-tree#readme",
+  "homepage": "https://github.com/stevef51/json-2-tree#readme",
   "devDependencies": {
-    "@babel/core": "^7.9.0",
-    "@babel/preset-env": "^7.9.0",
-    "@babel/preset-typescript": "^7.9.0",
     "@types/jest": "^25.1.4",
     "babel-jest": "^25.2.3",
     "jest": "^25.2.0",
