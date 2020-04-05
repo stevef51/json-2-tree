@@ -108,7 +108,7 @@ JsonTreeTranslators.register({
 	fatten(o, fatten, store) {
 		// Note, o is an object with the same properties are returned from 'flatten', however its values need 'fattening' to be used
 		var m = moment(fatten(o.dt));
-		if (dt.tz != null) {
+		if (o.tz != null) {
 			m = m.tz(fatten(o.tz));
 		}
 		return store(m);			// You must 'store' the result to allow JsonTree circular referencing to work
@@ -123,10 +123,10 @@ In the Moment example above we return enough information to fully restore the Mo
 
 ## The _fatten_ method
 A little more complex due to how deserialization must handle possible circular references, your _fatten_ method is passed an object to fatten, a funtion _fatten_ which will fatten other objects and a _store_ method which you must call as early as possible to register your fattened object to support circular reference.  
-The default Object _fatten_ method is as follows, note that it calls _store_ right away before fattening the objects properties :-
+The default Object _fatten_ method is essentially as follows, note that it calls _store_ right away before fattening the objects properties :-
 
 ```typescript
-	fatten(o: any, fatten: (o) => any, store: (o) => any)
+	fatten(o: any, fatten: (o: any) => any, store: (o: any) => any) {
 		let fatObj = store({});			// Create the Object and store it right away
 		let hasOwnProperty = Object.hasOwnProperty.bind(o);
 		// Populate the Objects properties
@@ -136,9 +136,10 @@ The default Object _fatten_ method is as follows, note that it calls _store_ rig
 			}
 		}
 		return fatObj;			// Return the fully fattened object
+	}
 ```
 
-If you objects have no possibility of circular references then calling _store_ at the end will work fine (like the Moment example)
+If your objects have no possibility of circular references then calling _store_ at the end will work fine (like the Moment example)
 
 ### Example of custom fatten
 ```typescript
