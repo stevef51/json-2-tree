@@ -5,12 +5,12 @@ Note, this package is similar to the popular 'flatted' (and CircularJSON) packag
 ## Installation
 
 ```bash
-npm install json-tree
+npm install @stevef51/json-tree
 ```
 
 ## Usage
 ```typescript
-import { JsonTree } from 'json-tree';
+import { JsonTree } from '@stevef51/json-tree';
 
 expect(JsonTree.parse(JsonTree.stringify('Hello world'))).toBe('Hello world');
 ```

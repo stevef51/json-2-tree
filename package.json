@@ -1,6 +1,6 @@
 {
   "name": "@stevef51/json-tree",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A circular reference and type aware JSON serializer/deserializer",
   "main": "dist/json-tree.js",
   "scripts": {
