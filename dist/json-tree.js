@@ -80,12 +80,18 @@ class JsonTree {
         return j2t.fatten(0);
     }
     static stringify(tree, options) {
-        let t2j = new Tree2Json((options === null || options === void 0 ? void 0 : options.translators) || exports.JsonTreeTranslators, options === null || options === void 0 ? void 0 : options.context, options === null || options === void 0 ? void 0 : options.externs);
-        t2j.flatten(tree);
-        return JSON.stringify(t2j.flatObjects);
+        return JSON.stringify(JsonTree.flatten(tree, options));
     }
     static parse(json, options) {
-        let j2t = new Json2Tree(JSON.parse(json), (options === null || options === void 0 ? void 0 : options.translators) || exports.JsonTreeTranslators, options === null || options === void 0 ? void 0 : options.context, options === null || options === void 0 ? void 0 : options.externs);
+        return JsonTree.fatten(JSON.parse(json), options);
+    }
+    static flatten(tree, options) {
+        let t2j = new Tree2Json((options === null || options === void 0 ? void 0 : options.translators) || exports.JsonTreeTranslators, options === null || options === void 0 ? void 0 : options.context, options === null || options === void 0 ? void 0 : options.externs);
+        t2j.flatten(tree);
+        return t2j.flatObjects;
+    }
+    static fatten(flat, options) {
+        let j2t = new Json2Tree(flat, (options === null || options === void 0 ? void 0 : options.translators) || exports.JsonTreeTranslators, options === null || options === void 0 ? void 0 : options.context, options === null || options === void 0 ? void 0 : options.externs);
         return j2t.fatten(0);
     }
 }

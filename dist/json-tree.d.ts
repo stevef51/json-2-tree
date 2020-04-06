@@ -31,6 +31,8 @@ export declare class JsonTree {
     fatten(flat: any[], context?: any): any;
     static stringify(tree: any, options?: JsonTreeOptions): string;
     static parse(json: string, options?: JsonTreeOptions): any;
+    static flatten(tree: any, options?: JsonTreeOptions): any[];
+    static fatten(flat: any[], options?: JsonTreeOptions): any;
 }
 export declare class Json2Tree {
     flattened: any[];

@@ -154,12 +154,18 @@ export class JsonTree {
 	}
 
 	static stringify(tree: any, options?: JsonTreeOptions): string {
-		let t2j = new Tree2Json(options?.translators || JsonTreeTranslators, options?.context, options?.externs);
-		t2j.flatten(tree);
-		return JSON.stringify(t2j.flatObjects);
+		return JSON.stringify(JsonTree.flatten(tree, options));
 	}
 	static parse(json: string, options?: JsonTreeOptions): any {
-		let j2t = new Json2Tree(JSON.parse(json), options?.translators || JsonTreeTranslators, options?.context, options?.externs);
+		return JsonTree.fatten(JSON.parse(json), options);
+	}
+	static flatten(tree: any, options?: JsonTreeOptions): any[] {
+		let t2j = new Tree2Json(options?.translators || JsonTreeTranslators, options?.context, options?.externs);
+		t2j.flatten(tree);
+		return t2j.flatObjects;
+	}
+	static fatten(flat: any[], options?: JsonTreeOptions): any {
+		let j2t = new Json2Tree(flat, options?.translators || JsonTreeTranslators, options?.context, options?.externs);
 		return j2t.fatten(0);
 	}
 }
