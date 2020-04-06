@@ -51,6 +51,9 @@ class JsonTreeTranslatorRegistry {
 exports.JsonTreeTranslatorRegistry = JsonTreeTranslatorRegistry;
 exports.JsonTreeTranslators = new JsonTreeTranslatorRegistry();
 const identity = o => o;
+class JsonTreeOptions {
+}
+exports.JsonTreeOptions = JsonTreeOptions;
 class JsonTree {
     constructor(translators) {
         this.translators = translators;
@@ -67,13 +70,22 @@ class JsonTree {
         let j2t = new Json2Tree(JSON.parse(json), this.translators, context, this.externs);
         return j2t.fatten(0);
     }
-    static stringify(tree, context, externs) {
-        let t2j = new Tree2Json(exports.JsonTreeTranslators, context, externs);
+    flatten(tree, context) {
+        let t2j = new Tree2Json(this.translators, context, this.externs);
+        t2j.flatten(tree);
+        return t2j.flatObjects;
+    }
+    fatten(flat, context) {
+        let j2t = new Json2Tree(flat, this.translators, context, this.externs);
+        return j2t.fatten(0);
+    }
+    static stringify(tree, options) {
+        let t2j = new Tree2Json((options === null || options === void 0 ? void 0 : options.translators) || exports.JsonTreeTranslators, options === null || options === void 0 ? void 0 : options.context, options === null || options === void 0 ? void 0 : options.externs);
         t2j.flatten(tree);
         return JSON.stringify(t2j.flatObjects);
     }
-    static parse(json, context, externs) {
-        let j2t = new Json2Tree(JSON.parse(json), exports.JsonTreeTranslators, context, externs);
+    static parse(json, options) {
+        let j2t = new Json2Tree(JSON.parse(json), (options === null || options === void 0 ? void 0 : options.translators) || exports.JsonTreeTranslators, options === null || options === void 0 ? void 0 : options.context, options === null || options === void 0 ? void 0 : options.externs);
         return j2t.fatten(0);
     }
 }
@@ -148,6 +160,13 @@ class Json2Tree {
                         throw new Error(`Cannot fatten ${constructorName}, missing Translator`);
                     }
                     let obj = this.flattened[flatObj[1]];
+                    if (typeof obj === 'object') {
+                        let fatPObj = Object.create(null);
+                        for (let p in obj) {
+                            fatPObj[this.fatten(Number(p))] = obj[p];
+                        }
+                        obj = fatPObj;
+                    }
                     return translator.fatten(obj, this.fatten.bind(this), fatObj => {
                         return this.storeRef(fatObj, flatObj);
                     }, this.context);
@@ -180,7 +199,7 @@ class Tree2Json {
         for (let p in fatObj) {
             if (hasOwnProperty(p)) {
                 let o = fatObj[p];
-                flatObj[p] = this.flatten(o);
+                flatObj[this.flatten(p)] = this.flatten(o);
             }
         }
         return ref;

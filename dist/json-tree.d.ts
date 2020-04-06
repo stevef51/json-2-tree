@@ -16,14 +16,21 @@ export declare class JsonTreeTranslatorRegistry {
     findName(name: string): TypeTranslator | null;
 }
 export declare const JsonTreeTranslators: JsonTreeTranslatorRegistry;
+export declare class JsonTreeOptions {
+    context?: any;
+    translators?: JsonTreeTranslatorRegistry;
+    externs?: any[];
+}
 export declare class JsonTree {
     translators?: JsonTreeTranslatorRegistry;
     externs: any[];
     constructor(translators?: JsonTreeTranslatorRegistry);
     stringify(tree: any, context?: any): string;
     parse(json: string, context?: any): any;
-    static stringify(tree: any, context?: any, externs?: any[]): string;
-    static parse(json: string, context?: any, externs?: any[]): any;
+    flatten(tree: any, context?: any): any[];
+    fatten(flat: any[], context?: any): any;
+    static stringify(tree: any, options?: JsonTreeOptions): string;
+    static parse(json: string, options?: JsonTreeOptions): any;
 }
 export declare class Json2Tree {
     flattened: any[];

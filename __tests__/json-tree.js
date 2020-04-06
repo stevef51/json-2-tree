@@ -154,9 +154,9 @@ test('Json2Tree should pass context to custom Types', () => {
 	let test = new Person('Fred', new Date(2020, 0, 1));
 
 	let context = { test }
-	let popsicle = JsonTree.stringify(test, context);
+	let popsicle = JsonTree.stringify(test, { context });
 	let testWithNoContext = JsonTree.parse(popsicle);
-	let testWithContext = JsonTree.parse(popsicle, context);
+	let testWithContext = JsonTree.parse(popsicle, { context });
 
 	expect(testWithNoContext.constructor).toBe(Person);
 	expect(testWithNoContext.constructor).toBe(Person);
@@ -226,8 +226,8 @@ test('Json2Tree supports flattening with externals', () => {
 	expect(test2.extern2).not.toBe(extern2);
 
 	// Now with externs
-	popsicle = JsonTree.stringify(test, undefined, [extern1, extern2]);
-	test2 = JsonTree.parse(popsicle, undefined, [extern1, extern2]);
+	popsicle = JsonTree.stringify(test, { externs: [extern1, extern2] });
+	test2 = JsonTree.parse(popsicle, { externs: [extern1, extern2] });
 
 	expect(test2).not.toBe(test);
 	expect(test2.name).toBe(test.name);

@@ -117,6 +117,12 @@ export const JsonTreeTranslators = new JsonTreeTranslatorRegistry();
 
 const identity = o => o;
 
+export class JsonTreeOptions {
+	context?: any;
+	translators?: JsonTreeTranslatorRegistry;
+	externs?: any[]
+}
+
 export class JsonTree {
 	public externs: any[];
 
@@ -136,13 +142,24 @@ export class JsonTree {
 		return j2t.fatten(0);
 	}
 
-	static stringify(tree: any, context?: any, externs?: any[]): string {
-		let t2j = new Tree2Json(JsonTreeTranslators, context, externs);
+	flatten(tree: any, context?: any): any[] {
+		let t2j = new Tree2Json(this.translators, context, this.externs);
+		t2j.flatten(tree);
+		return t2j.flatObjects;
+	}
+
+	fatten(flat: any[], context?: any): any {
+		let j2t = new Json2Tree(flat, this.translators, context, this.externs);
+		return j2t.fatten(0);
+	}
+
+	static stringify(tree: any, options?: JsonTreeOptions): string {
+		let t2j = new Tree2Json(options?.translators || JsonTreeTranslators, options?.context, options?.externs);
 		t2j.flatten(tree);
 		return JSON.stringify(t2j.flatObjects);
 	}
-	static parse(json: string, context?: any, externs?: any[]): any {
-		let j2t = new Json2Tree(JSON.parse(json), JsonTreeTranslators, context, externs);
+	static parse(json: string, options?: JsonTreeOptions): any {
+		let j2t = new Json2Tree(JSON.parse(json), options?.translators || JsonTreeTranslators, options?.context, options?.externs);
 		return j2t.fatten(0);
 	}
 }
@@ -217,6 +234,13 @@ export class Json2Tree {
 						throw new Error(`Cannot fatten ${constructorName}, missing Translator`);
 					}
 					let obj = this.flattened[flatObj[1]];
+					if (typeof obj === 'object') {
+						let fatPObj = Object.create(null);
+						for (let p in obj) {
+							fatPObj[this.fatten(Number(p))] = obj[p];
+						}
+						obj = fatPObj;
+					}
 					return translator.fatten(obj, this.fatten.bind(this), fatObj => {
 						return this.storeRef(fatObj, flatObj);
 					}, this.context)
@@ -251,7 +275,7 @@ export class Tree2Json {
 		for (let p in fatObj) {
 			if (hasOwnProperty(p)) {
 				let o = fatObj[p];
-				flatObj[p] = this.flatten(o);
+				flatObj[this.flatten(p)] = this.flatten(o);
 			}
 		}
 		return ref;
