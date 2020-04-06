@@ -26,6 +26,7 @@ expect(JsonTree.parse(JsonTree.stringify('Hello world'))).toBe('Hello world');
 - Objects create with {} and Objects created with _Object.create(null)_ are handled (ie correct prototype can be recreated)
 - Able to register "custom type translators" which handle classes 
 - Everything is keyed into the root array including primitives which allows for primitive compression - eg a Number is gauranteed to appear once in the root array no matter how many times it is used in the object hierarchy
+- Object property names are also keyed into the root array for better "compression" of large trees (single objects will be bigger due to keying overhead)
 - Able to handle "externs", objects which are not to be serialized but can be "hooked" back up during deserialization
 
 ### Examples
@@ -50,7 +51,7 @@ JsonTree.stringify([123,123])
 var fred = { name: 'Fred', age: 36 }
 
 JsonTree.stringify(fred);
-//[[1,2],"Object",{"name":3,"age":4},"Fred",36]
+//[[1,2],"Object",{"3":4,"5":6},"name","Fred","age",36]
 
 
 var betty = { name: 'Betty', age: 36 }
@@ -58,7 +59,7 @@ betty.brother = fred;
 fred.sister = betty;
 
 JsonTree.stringify([fred, betty])
-//[[[1,6]],[2,3],"Object",{"name":4,"age":5,"sister":6},"Fred",36,[2,7],{"name":8,"age":5,"brother":1},"Betty"]
+//[[[1,10]],[2,3],"Object",{"4":5,"6":7,"8":9},"name","Fred","age",36,"sister",[2,11],{"4":12,"6":5,"brother":1},"Betty","brother"]
 ```
 
 To handle custom types (classes), you register your type with JsonTree :-
@@ -76,7 +77,7 @@ JsonTreeTranslators.register({
 ```
 ```javascript
 JsonTree.stringify(new Person("Fred", 36))
-//[[1,2],"Person",{"name":3,"age":4},"Fred",36]
+//[[1,2],"Person",{"3":4,"5":6},"name","Fred","age",36]
 ```
 
 To avoid possible name clashes, use a name override when registering
@@ -90,7 +91,7 @@ JsonTreeTranslators.register({
 
 ```javascript
 JsonTree.stringify(new Person("Fred", 36))
-//[[1,2],"My Person",{"name":3,"age":4},"Fred",36]
+//[[1,2],"My Person",{"3":4,"5":6},"name","Fred","age",36]
 ```
 
 To handle more complex types that don't necessarily have public properties that you want to iterate and serialize you provide your own _flatten_ and _fatten_ methods, for example to handle a Javascript Moment along with possible timezone (eg moment-timezone), simply use the following registration
@@ -173,7 +174,7 @@ JsonTreeTranslators.register({
 })
 
 JsonTree.stringify([fred,betty]);
-//[[[1,6]],[2,3],"Person",{"name":4,"age":5,"sister":6},"Fred",36,[2,7],{"name":8,"age":9,"brother":1},"Betty",32]
+//[[[1,10]],[2,3],"Person",{"4":5,"6":7,"8":9},"name","Fred","age",36,"sister",[2,11],{"4":12,"5":9,"13":1},"Betty","brother"]
 ```
 
 Note, there is no need for a custom _flatten_ since all public properties are automatically handled by the default _flatten_ method
@@ -189,7 +190,7 @@ let jt = new JsonTree();
 jt.externs = [fred];
 
 let externFredAndBetty = jt.stringify([fred,betty])
-//[[[-1,1]],[2,3],{name:4,age:5,brother:-1},"Betty",32]
+//[[[-1,1]],[2,3],"Person",{"4":5,"6":7,"8":-1},"name","Betty","age":32,"brother"]
 ```
 
 and to deserialise the original structure with a prepared Fred object
