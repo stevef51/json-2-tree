@@ -55,28 +55,28 @@ class JsonTreeOptions {
 }
 exports.JsonTreeOptions = JsonTreeOptions;
 class JsonTree {
-    constructor(translators) {
-        this.translators = translators;
-        if (this.translators === undefined) {
-            this.translators = exports.JsonTreeTranslators;
-        }
+    constructor(options) {
+        this.options = options;
+        this.options = Object.assign({
+            translators: exports.JsonTreeTranslators,
+        }, options || {});
     }
-    stringify(tree, context) {
-        let t2j = new Tree2Json(this.translators, context, this.externs);
+    stringify(tree) {
+        let t2j = new Tree2Json(this.options);
         t2j.flatten(tree);
         return JSON.stringify(t2j.flatObjects);
     }
-    parse(json, context) {
-        let j2t = new Json2Tree(JSON.parse(json), this.translators, context, this.externs);
+    parse(json) {
+        let j2t = new Json2Tree(JSON.parse(json), this.options);
         return j2t.fatten(0);
     }
-    flatten(tree, context) {
-        let t2j = new Tree2Json(this.translators, context, this.externs);
+    flatten(tree) {
+        let t2j = new Tree2Json(this.options);
         t2j.flatten(tree);
         return t2j.flatObjects;
     }
-    fatten(flat, context) {
-        let j2t = new Json2Tree(flat, this.translators, context, this.externs);
+    fatten(flat) {
+        let j2t = new Json2Tree(flat, this.options);
         return j2t.fatten(0);
     }
     static stringify(tree, options) {
@@ -86,12 +86,12 @@ class JsonTree {
         return JsonTree.fatten(JSON.parse(json), options);
     }
     static flatten(tree, options) {
-        let t2j = new Tree2Json((options === null || options === void 0 ? void 0 : options.translators) || exports.JsonTreeTranslators, options === null || options === void 0 ? void 0 : options.context, options === null || options === void 0 ? void 0 : options.externs);
+        let t2j = new Tree2Json(options);
         t2j.flatten(tree);
         return t2j.flatObjects;
     }
     static fatten(flat, options) {
-        let j2t = new Json2Tree(flat, (options === null || options === void 0 ? void 0 : options.translators) || exports.JsonTreeTranslators, options === null || options === void 0 ? void 0 : options.context, options === null || options === void 0 ? void 0 : options.externs);
+        let j2t = new Json2Tree(flat, options);
         return j2t.fatten(0);
     }
 }
@@ -115,13 +115,14 @@ exports.JsonTreeTranslators.register({
     }
 });
 class Json2Tree {
-    constructor(flattened, translators, context, externs) {
+    constructor(flattened, options) {
         this.flattened = flattened;
-        this.translators = translators;
-        this.context = context;
-        this.externs = externs;
+        this.options = options;
         this.fatObjects = [];
         this.fattenedObjects = [];
+        this.options = Object.assign({
+            translators: exports.JsonTreeTranslators
+        }, options);
     }
     fattenArray(flatArray) {
         let fatArray = [];
@@ -141,7 +142,7 @@ class Json2Tree {
         else if (typeof flatRef === 'number') {
             // A -ve index means it should be an extern lookup 
             if (flatRef < 0) {
-                return this.externs[-flatRef - 1];
+                return this.options.externs[-flatRef - 1];
             }
             let flatObj = this.flattened[flatRef];
             let i = this.fattenedObjects.indexOf(flatObj);
@@ -161,12 +162,12 @@ class Json2Tree {
                 }
                 else {
                     let constructorName = this.fatten(flatObj[0]);
-                    let translator = this.translators.findName(constructorName);
+                    let translator = this.options.translators.findName(constructorName);
                     if (translator == null) {
                         throw new Error(`Cannot fatten ${constructorName}, missing Translator`);
                     }
                     let obj = this.flattened[flatObj[1]];
-                    if (typeof obj === 'object') {
+                    if (typeof obj === 'object' && this.options.flattenPropertyNames === true) {
                         let fatPObj = Object.create(null);
                         for (let p in obj) {
                             fatPObj[this.fatten(Number(p))] = obj[p];
@@ -175,7 +176,7 @@ class Json2Tree {
                     }
                     return translator.fatten(obj, this.fatten.bind(this), fatObj => {
                         return this.storeRef(fatObj, flatObj);
-                    }, this.context);
+                    }, this.options.context);
                 }
             }
             throw new Error(`Unexpected fatten construct ${JSON.stringify(flatObj)}`);
@@ -191,12 +192,13 @@ class Json2Tree {
 exports.Json2Tree = Json2Tree;
 const NotFlattened = Object.create(null);
 class Tree2Json {
-    constructor(translators, context, externs) {
-        this.translators = translators;
-        this.context = context;
-        this.externs = externs;
+    constructor(options) {
+        this.options = options;
         this.flatObjects = [];
         this.fatObjects = [];
+        this.options = Object.assign({
+            translators: exports.JsonTreeTranslators
+        }, options);
     }
     flattenObject(fatObj) {
         let flatObj = Object.create(null);
@@ -205,7 +207,7 @@ class Tree2Json {
         for (let p in fatObj) {
             if (hasOwnProperty(p)) {
                 let o = fatObj[p];
-                flatObj[this.flatten(p)] = this.flatten(o);
+                flatObj[this.options.flattenPropertyNames === true ? this.flatten(p) : p] = this.flatten(o);
             }
         }
         return ref;
@@ -228,8 +230,8 @@ class Tree2Json {
         if (i >= 0) {
             return i;
         }
-        if (this.externs != null) {
-            i = this.externs.indexOf(fatObj);
+        if (this.options.externs != null) {
+            i = this.options.externs.indexOf(fatObj);
             if (i >= 0) {
                 return -1 - i; // -ve index means its an extern and will not be flattened
             }
@@ -255,11 +257,11 @@ class Tree2Json {
         let ref = this.flattenBasic(fatObj);
         if (ref === NotFlattened) {
             let constructor = fatObj.constructor;
-            let translator = this.translators.findConstructor(constructor);
+            let translator = this.options.translators.findConstructor(constructor);
             if (translator == null) {
                 throw new Error(`Cannot flatten ${constructor === null || constructor === void 0 ? void 0 : constructor.name}, missing Translator`);
             }
-            let translatedObj = translator.flatten(fatObj, this.context);
+            let translatedObj = translator.flatten(fatObj, this.options.context);
             if (translatedObj === fatObj) {
                 translatedObj = Object.assign(Object.create(null), fatObj);
             }

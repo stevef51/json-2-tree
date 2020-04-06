@@ -245,7 +245,9 @@ test('Json2Tree instance supports custom Object flattening', () => {
 			return result;
 		}
 	})
-	let jt = new JsonTree(jtr);
+	let jt = new JsonTree({
+		translators: jtr
+	});
 
 	let test = {
 		a: '1',

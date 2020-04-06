@@ -20,15 +20,15 @@ export declare class JsonTreeOptions {
     context?: any;
     translators?: JsonTreeTranslatorRegistry;
     externs?: any[];
+    flattenPropertyNames?: boolean;
 }
 export declare class JsonTree {
-    translators?: JsonTreeTranslatorRegistry;
-    externs: any[];
-    constructor(translators?: JsonTreeTranslatorRegistry);
-    stringify(tree: any, context?: any): string;
-    parse(json: string, context?: any): any;
-    flatten(tree: any, context?: any): any[];
-    fatten(flat: any[], context?: any): any;
+    options?: JsonTreeOptions;
+    constructor(options?: JsonTreeOptions);
+    stringify(tree: any): string;
+    parse(json: string): any;
+    flatten(tree: any): any[];
+    fatten(flat: any[]): any;
     static stringify(tree: any, options?: JsonTreeOptions): string;
     static parse(json: string, options?: JsonTreeOptions): any;
     static flatten(tree: any, options?: JsonTreeOptions): any[];
@@ -36,23 +36,19 @@ export declare class JsonTree {
 }
 export declare class Json2Tree {
     flattened: any[];
-    translators: JsonTreeTranslatorRegistry;
-    context?: any;
-    externs?: any[];
+    options?: JsonTreeOptions;
     fatObjects: any[];
     fattenedObjects: any;
-    constructor(flattened: any[], translators: JsonTreeTranslatorRegistry, context?: any, externs?: any[]);
+    constructor(flattened: any[], options?: JsonTreeOptions);
     fattenArray(flatArray: []): any;
     fatten(flatRef: any): any;
     storeRef(fatObj: any, flatObj: any): any;
 }
 export declare class Tree2Json {
-    translators: JsonTreeTranslatorRegistry;
-    context?: any;
-    externs?: any[];
+    options?: JsonTreeOptions;
     flatObjects: any[];
     fatObjects: any[];
-    constructor(translators: JsonTreeTranslatorRegistry, context?: any, externs?: any[]);
+    constructor(options?: JsonTreeOptions);
     flattenObject(fatObj: any): any;
     flattenArray(fatArray: []): any;
     flattenBasic(fatObj: any): any;
