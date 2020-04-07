@@ -118,17 +118,26 @@ export const JsonTreeTranslators = new JsonTreeTranslatorRegistry();
 const identity = o => o;
 
 export class JsonTreeOptions {
-	context?: any;
-	translators?: JsonTreeTranslatorRegistry;
-	externs?: any[];
-	flattenPropertyNames?: boolean;
+	context: any;
+	translators: JsonTreeTranslatorRegistry;
+	externs: any[];
+	flattenPropertyNames: boolean;
+}
+
+function makeOptions(options?: Partial<JsonTreeOptions>) {
+	return Object.assign({
+		translators: JsonTreeTranslators,
+		context: null,
+		externs: null,
+		flattenPropertyNames: false
+	}, options || {});
 }
 
 export class JsonTree {
-	constructor(public options?: JsonTreeOptions) {
-		this.options = Object.assign({
-			translators: JsonTreeTranslators,
-		}, options || {});
+	public options: JsonTreeOptions;
+
+	constructor(options?: Partial<JsonTreeOptions>) {
+		this.options = makeOptions(options);
 	}
 
 	stringify(tree: any): string {
@@ -152,19 +161,19 @@ export class JsonTree {
 		return j2t.fatten(0);
 	}
 
-	static stringify(tree: any, options?: JsonTreeOptions): string {
+	static stringify(tree: any, options?: Partial<JsonTreeOptions>): string {
 		return JSON.stringify(JsonTree.flatten(tree, options));
 	}
-	static parse(json: string, options?: JsonTreeOptions): any {
+	static parse(json: string, options?: Partial<JsonTreeOptions>): any {
 		return JsonTree.fatten(JSON.parse(json), options);
 	}
-	static flatten(tree: any, options?: JsonTreeOptions): any[] {
-		let t2j = new Tree2Json(options);
+	static flatten(tree: any, options?: Partial<JsonTreeOptions>): any[] {
+		let t2j = new Tree2Json(makeOptions(options));
 		t2j.flatten(tree);
 		return t2j.flatObjects;
 	}
-	static fatten(flat: any[], options?: JsonTreeOptions): any {
-		let j2t = new Json2Tree(flat, options);
+	static fatten(flat: any[], options?: Partial<JsonTreeOptions>): any {
+		let j2t = new Json2Tree(flat, makeOptions(options));
 		return j2t.fatten(0);
 	}
 }
@@ -194,10 +203,7 @@ export class Json2Tree {
 	public fatObjects: any[] = [];
 	public fattenedObjects: any = [];
 
-	constructor(public flattened: any[], public options?: JsonTreeOptions) {
-		this.options = Object.assign({
-			translators: JsonTreeTranslators
-		}, options);
+	constructor(public flattened: any[], public options: JsonTreeOptions) {
 	}
 
 	fattenArray(flatArray: []): any {
@@ -272,10 +278,7 @@ export class Tree2Json {
 	public flatObjects: any[] = [];
 	public fatObjects: any[] = [];
 
-	constructor(public options?: JsonTreeOptions) {
-		this.options = Object.assign({
-			translators: JsonTreeTranslators
-		}, options);
+	constructor(public options: JsonTreeOptions) {
 	}
 
 	flattenObject(fatObj: any): any {

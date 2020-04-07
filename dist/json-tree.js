@@ -54,12 +54,17 @@ const identity = o => o;
 class JsonTreeOptions {
 }
 exports.JsonTreeOptions = JsonTreeOptions;
+function makeOptions(options) {
+    return Object.assign({
+        translators: exports.JsonTreeTranslators,
+        context: null,
+        externs: null,
+        flattenPropertyNames: false
+    }, options || {});
+}
 class JsonTree {
     constructor(options) {
-        this.options = options;
-        this.options = Object.assign({
-            translators: exports.JsonTreeTranslators,
-        }, options || {});
+        this.options = makeOptions(options);
     }
     stringify(tree) {
         let t2j = new Tree2Json(this.options);
@@ -86,12 +91,12 @@ class JsonTree {
         return JsonTree.fatten(JSON.parse(json), options);
     }
     static flatten(tree, options) {
-        let t2j = new Tree2Json(options);
+        let t2j = new Tree2Json(makeOptions(options));
         t2j.flatten(tree);
         return t2j.flatObjects;
     }
     static fatten(flat, options) {
-        let j2t = new Json2Tree(flat, options);
+        let j2t = new Json2Tree(flat, makeOptions(options));
         return j2t.fatten(0);
     }
 }
@@ -120,9 +125,6 @@ class Json2Tree {
         this.options = options;
         this.fatObjects = [];
         this.fattenedObjects = [];
-        this.options = Object.assign({
-            translators: exports.JsonTreeTranslators
-        }, options);
     }
     fattenArray(flatArray) {
         let fatArray = [];
@@ -196,9 +198,6 @@ class Tree2Json {
         this.options = options;
         this.flatObjects = [];
         this.fatObjects = [];
-        this.options = Object.assign({
-            translators: exports.JsonTreeTranslators
-        }, options);
     }
     flattenObject(fatObj) {
         let flatObj = Object.create(null);
