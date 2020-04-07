@@ -1,9 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-function fattenObjectFactory(ctr) {
-    ctr = ctr || (() => Object.create(null));
+function fattenObjectFactory(create) {
     return function fatten(o, fatten, store) {
-        let fatObj = store(ctr());
+        let fatObj = store(create());
         let hasOwnProperty = Object.hasOwnProperty.bind(o);
         for (let p in o) {
             if (hasOwnProperty(p)) {
@@ -25,11 +24,15 @@ class JsonTreeTranslatorRegistry {
     }
     register(...configs) {
         configs.map(config => {
+            if (!config.create && !config.fatten) {
+                throw new Error(`JsonTree Translator must provide either 'create' or 'fatten' methods`);
+            }
             this.types.push({
                 ctr: config.ctr,
+                create: config.create,
                 name: config.name || config.ctr.name,
                 flatten: config.flatten || identity,
-                fatten: config.fatten || fattenObjectFactory(config.ctr)
+                fatten: config.fatten || fattenObjectFactory(config.create)
             });
         });
     }
@@ -103,11 +106,13 @@ class JsonTree {
 exports.JsonTree = JsonTree;
 // Handle Objects - note, a fatten'ed Object will always have a "undefined" prototype
 exports.JsonTreeTranslators.register({
-    ctr: Object
+    ctr: Object,
+    create: () => new Object()
 });
 exports.JsonTreeTranslators.register({
     ctr: undefined,
-    name: `undefined`
+    name: `undefined`,
+    create: () => Object.create(null)
 });
 // Handle Date's
 exports.JsonTreeTranslators.register({

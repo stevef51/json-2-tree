@@ -3,6 +3,7 @@ export declare type CustomFlatten = (o: any, context?: any) => any;
 export declare type CustomFatten = (o: any, fatten: Convert, store: Convert, context?: any) => any;
 export interface TypeTranslator {
     ctr: Function;
+    create?: () => any;
     name?: string;
     flatten?: CustomFlatten;
     fatten?: CustomFatten;

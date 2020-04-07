@@ -239,6 +239,7 @@ test('Json2Tree instance supports custom Object flattening', () => {
 	let jtr = new JsonTreeTranslatorRegistry();
 	jtr.register({
 		ctr: Object,
+		create: () => new Object(),
 		flatten: o => {
 			let result = Object.assign({}, o);
 			delete result.$$hashKey;
