@@ -165,7 +165,13 @@ class Json2Tree {
             }
             if (Array.isArray(flatObj)) {
                 if (flatObj.length === 1) {
-                    return this.fattenArray(flatObj[0]);
+                    let fatArray = [];
+                    let flatArray = flatObj[0];
+                    this.storeRef(fatArray, flatObj);
+                    for (let p in flatArray) {
+                        fatArray[p] = this.fatten(flatArray[p]);
+                    }
+                    return fatArray;
                 }
                 else {
                     let constructorName = this.fatten(flatObj[0]);

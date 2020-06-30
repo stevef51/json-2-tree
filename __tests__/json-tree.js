@@ -260,3 +260,21 @@ test('Json2Tree instance supports custom Object flattening', () => {
 	expect(test2.a).toBe(test.a);
 	expect(test2.$$hashKey).toBeUndefined();
 });
+
+test("Json2Tree should be able to store arrays", () => {
+	let test = [1, 2, 3];
+	let popsicle = JsonTree.stringify(test);
+	let thawed = JsonTree.parse(popsicle);
+	expect(thawed).toEqual(test);
+})
+
+test("Regression test - Json2Tree should be able to store array references", () => {
+	let test = {};
+	test.a = [1, 2, 3];
+	test.b = test.a;
+	let popsicle = JsonTree.stringify(test);
+	let thawed = JsonTree.parse(popsicle);
+	expect(JSON.stringify(thawed)).toBe(JSON.stringify(test));
+	expect(thawed.a).toBe(thawed.b);
+})
+

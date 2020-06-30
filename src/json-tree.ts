@@ -246,7 +246,13 @@ export class Json2Tree {
 
 			if (Array.isArray(flatObj)) {
 				if (flatObj.length === 1) {
-					return this.fattenArray(flatObj[0]);
+					let fatArray: any[] = [];
+					let flatArray: any[] = flatObj[0];
+					this.storeRef(fatArray, flatObj);
+					for (let p in flatArray) {
+						fatArray[p] = this.fatten(flatArray[p]);
+					}
+					return fatArray;
 				} else {
 					let constructorName = this.fatten(flatObj[0]);
 					let translator = this.options.translators.findName(constructorName);
